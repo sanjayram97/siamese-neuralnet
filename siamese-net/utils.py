@@ -7,6 +7,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, Dense, Dropout, GlobalAveragePooling2D, Lambda
 import tensorflow.keras.backend as K
 import matplotlib.pyplot as plt
+import config
 
 def euclidean_distance(vectors):
     (featsA, featsB) = vectors
@@ -86,3 +87,29 @@ def make_pairs(images, labels):
         pairLabels.append([0])
         
     return np.array(pairImages), np.array(pairLabels)
+
+
+def get_prediction_scores(model, anchor, images, labels, target_size=(28,28)):
+  # preprocess anchor image
+  h,w = target_size
+  _,_,c = anchor.shape
+  if c != 1:
+    anchor = cv2.cvtColor(anchor, cv2.COLOR_BGR2GRAY)
+  anchor = cv2.resize(anchor, (h,w))
+  print('---')
+  print(anchor.shape)
+  print('---')
+  UniqueClasses = np.unique(labels)
+  numClasses = len(UniqueClasses)
+  idx = [np.where(labels == i)[0] for i in range(0, numClasses)]
+  similarity_score = {}
+  scores = []
+  anchor = anchor.reshape(1, h, w, 1)
+  for idx,i in enumerate(idx):
+    img = np.random.choice(i)
+    print(img)
+    tr_img = images[img].reshape(1, h, w, 1)
+    score = model.predict([anchor, tr_img])
+    similarity_score[idx] = score
+    scores.append(score)
+  return similarity_score, np.argmax(scores)
